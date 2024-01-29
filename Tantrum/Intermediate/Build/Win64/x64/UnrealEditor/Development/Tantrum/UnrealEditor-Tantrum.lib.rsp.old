@@ -1,0 +1,19 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-Tantrum.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\TantrumEditor\Development\Engine\SharedPCH.Engine.Cpp20.h.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\Tantrum.init.gen.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumCharacterBase.gen.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumGameModeBase.gen.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumPlayerController.gen.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\Tantrum.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumCharacterBase.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumGameModeBase.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\TantrumPlayerController.cpp.obj"
+"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\Default.rc2.res"
+/OUT:"E:\CG Spectrum\Term 3\Tantrum\Tantrum\Intermediate\Build\Win64\x64\UnrealEditor\Development\Tantrum\UnrealEditor-Tantrum.lib"

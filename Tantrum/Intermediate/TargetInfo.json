@@ -1,0 +1,14 @@
+{
+	"Targets": [
+		{
+			"Name": "Tantrum",
+			"Path": "..\\Source\\Tantrum.Target.cs",
+			"Type": "Game"
+		},
+		{
+			"Name": "TantrumEditor",
+			"Path": "..\\Source\\TantrumEditor.Target.cs",
+			"Type": "Editor"
+		}
+	]
+}
