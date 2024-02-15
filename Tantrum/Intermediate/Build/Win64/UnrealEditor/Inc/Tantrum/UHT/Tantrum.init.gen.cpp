@@ -17,7 +17,7 @@ void EmptyLinkFunctionForGeneratedCodeTantrum_init() {}
 				nullptr,
 				0,
 				PKG_CompiledIn | 0x00000000,
-				0xEDB7CA93,
+				0x60052CCD,
 				0xC7D5AB14,
 				METADATA_PARAMS(0, nullptr)
 			};
@@ -25,5 +25,5 @@ void EmptyLinkFunctionForGeneratedCodeTantrum_init() {}
 		}
 		return Z_Registration_Info_UPackage__Script_Tantrum.OuterSingleton;
 	}
-	static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_Tantrum(Z_Construct_UPackage__Script_Tantrum, TEXT("/Script/Tantrum"), Z_Registration_Info_UPackage__Script_Tantrum, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0xEDB7CA93, 0xC7D5AB14));
+	static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_Tantrum(Z_Construct_UPackage__Script_Tantrum, TEXT("/Script/Tantrum"), Z_Registration_Info_UPackage__Script_Tantrum, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0x60052CCD, 0xC7D5AB14));
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
