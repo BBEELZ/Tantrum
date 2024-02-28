@@ -4,17 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Sound/SoundCue.h"
 #include "TantrumPlayerController.generated.h"
 
-/**
- * 
- */
+class ATantrumGameModeBase;
+class UUserWidget;
+
 UCLASS()
 class TANTRUM_API ATantrumPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
+
+	virtual void BeginPlay() override;
 
 protected:
 	void SetupInputComponent() override;
@@ -23,6 +26,11 @@ protected:
 	void RequestMoveRight(float AxisValue);
 	void RequestLookUp(float AxisValue);
 	void RequestLookRight(float AxisValue);
+	void RequestThrowObject(float AxisValue);
+
+	void RequestPullObject();
+	void RequestStopPullObject();
+
 	void RequestJump();
 	void RequestStopJump();
 
@@ -32,6 +40,12 @@ protected:
 	void RequestSprintStart();
 	void RequestSprintEnd();
 
+	/*UPROPERTY(EditAnywhere, Category = "HUD")
+	TSubclassOf<class UUserWidget > HUDClass;
+
+	UPROPERTY()
+	UUserWidget* HUDWidget;*/
+
 	/*Base lookup rate, in deg/sec. Other scaling may affect final lookup rate.*/
 	UPROPERTY(EditAnywhere, Category = "Look")
 	float BaseLookUpRate = 90.0f;
@@ -40,7 +54,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Look")
 	float BaseLookRightRate = 90.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Movement")
-	float SprintSpeed = 1200.0f;
+	//Sound Cur for Jumping Sound
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundCue* JumpSound = nullptr;
+
+	ATantrumGameModeBase* GameModeRef;
+
+	//used to determine flick of axis
+	//float LastDelta = 0.0f;
+	float LastAxis = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	float FlickThreshold = 0.75f;
 };
 
