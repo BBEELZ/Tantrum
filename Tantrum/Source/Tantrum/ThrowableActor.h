@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "InteractInterface.h"
 #include "ThrowableActor.generated.h"
 
 class UStaticMeshComponent;
@@ -37,6 +38,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleHighlight(bool bIsOn);
 
+	EEffectType GetEffectType();
+
 protected:
 	enum class EState
 	{
@@ -68,5 +71,8 @@ protected:
 
 	UPROPERTY()
 	AActor* PullActor = nullptr;
+
+	UPROPERTY(EditAnywhere, Category="Effect")
+	EEffectType EffectType = EEffectType::None;
 
 };

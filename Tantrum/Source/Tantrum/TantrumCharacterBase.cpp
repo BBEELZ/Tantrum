@@ -14,6 +14,23 @@ constexpr int CVSphereCastPlayerView = 0;
 constexpr int CVSphereCastActorTransform = 1;
 constexpr int CVLineCastActorTransform = 2;
 
+static AActor* GetClosestActor(const TArray<AActor*>& Actors, const FVector& PlayerLocation) {
+
+	if (Actors.Num() == 0) { return nullptr; }
+
+	AActor* Closest = Actors[0];
+	float ClosestDistance = FVector::DistSquared(Actors[0]->GetActorLocation(), PlayerLocation);
+	for (int i = 1; i < Actors.Num(); i++) {
+		float NewDistance = FVector::DistSquared(Actors[i]->GetActorLocation(), PlayerLocation);
+		if (NewDistance < ClosestDistance) {
+			Closest = Actors[i];
+			ClosestDistance = NewDistance;
+		}
+	}
+
+	return Closest;
+}
+
 //add cvars for debug
 static TAutoConsoleVariable<int> CVarTraceMode(
 	TEXT("Tantrum.Character.Debug.TraceMode"),
@@ -50,6 +67,7 @@ ATantrumCharacterBase::ATantrumCharacterBase()
 void ATantrumCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+	EffectCooldown = DefaultEffectCooldown;
 	if (GetCharacterMovement())
 	{
 		MaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
@@ -65,6 +83,20 @@ void ATantrumCharacterBase::Tick(float DeltaTime)
 	if (bIsStunned)
 	{
 		return;
+	}
+
+	if (bIsUnderEffect)
+	{
+		if (EffectCooldown > 0)
+		{
+			EffectCooldown -= DeltaTime;
+		}
+		else
+		{
+			bIsUnderEffect = false;
+			EffectCooldown = DefaultEffectCooldown;
+			EndEffect();
+		}	
 	}
 
 	if (CharacterThrowState == ECharacterThrowState::Throwing)
@@ -200,6 +232,13 @@ void ATantrumCharacterBase::ResetThrowableObject()
 	}
 	CharacterThrowState = ECharacterThrowState::None;
 	ThrowableActor = nullptr;
+}
+
+void ATantrumCharacterBase::RequestUseObject()
+{
+	ApplyEffect_Implementation(ThrowableActor->GetEffectType(), true);
+	ThrowableActor->Destroy();
+	ResetThrowableObject();
 }
 
 void ATantrumCharacterBase::OnThrowableAttached(AThrowableActor* InThrowableActor)
@@ -447,4 +486,35 @@ void ATantrumCharacterBase::UpdateStun()
 void ATantrumCharacterBase::OnStunEnd()
 {
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void ATantrumCharacterBase::ApplyEffect_Implementation(EEffectType EffectType, bool bIsBuff)
+{
+	if (bIsUnderEffect) return;
+
+	CurrentEffect = EffectType;
+	bIsUnderEffect = true;
+	bIsEffectBuff = bIsBuff;
+
+	switch (CurrentEffect)
+	{
+	case EEffectType::Speed :
+		bIsEffectBuff ? SprintSpeed *= 2 : GetCharacterMovement()->DisableMovement();
+		break;
+	default:
+		break;
+	}
+}
+
+void ATantrumCharacterBase::EndEffect()
+{
+	bIsUnderEffect = false;
+	switch (CurrentEffect)
+	{
+	case EEffectType::Speed :
+		bIsEffectBuff ? SprintSpeed /= 2, RequestSprintEnd() : GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		break;
+	default:
+		break;
+	}
 }

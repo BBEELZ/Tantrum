@@ -14,7 +14,13 @@
 				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Characters/Animations/EpicCharacter_InteractQuick.uasset",
 				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Characters/Animations/EpicCharacter_Interact.uasset",
 				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Characters/Animations/ThrowMontage.uasset",
-				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/SphereThrowableActor.uasset"
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/SphereThrowableActor.uasset",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/GameModes/BP_TantrumGameModeBase.uasset",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Maps/Playground.umap",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/UI/WBP_Game.uasset",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/UI/WBP_Button.uasset",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/BPI_Demo.uasset",
+				"E:/CG Spectrum/Term 3/Tantrum/Tantrum/Content/Tantrum/Blueprints/BP_ThrowableActor.uasset"
 			]
 		}
 	]

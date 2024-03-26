@@ -5,6 +5,8 @@
 #include "TantrumCharacterBase.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "TantrumGameModeBase.h"
 
 static TAutoConsoleVariable<bool> CVarDisplayLaunchInputDelta(
 	TEXT("Tantrum.Character.Debug.DisplayLaunchInputDelta"),
@@ -15,6 +17,7 @@ static TAutoConsoleVariable<bool> CVarDisplayLaunchInputDelta(
 void ATantrumPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	GameModeRef = Cast<ATantrumGameModeBase>(GetWorld()->GetAuthGameMode());
 }
 
 void ATantrumPlayerController::SetupInputComponent()
@@ -44,6 +47,11 @@ void ATantrumPlayerController::SetupInputComponent()
 
 void ATantrumPlayerController::RequestMoveForward(float AxisValue)
 {
+	if (!GameModeRef || GameModeRef->GetCurrentGameState() != EGameState::Playing)
+	{
+		return;
+	}
+
 	if (AxisValue != 0.f)
 	{
 		FRotator const ControlSpaceRot = GetControlRotation();
@@ -54,6 +62,11 @@ void ATantrumPlayerController::RequestMoveForward(float AxisValue)
 
 void ATantrumPlayerController::RequestMoveRight(float AxisValue)
 {
+	if (!GameModeRef || GameModeRef->GetCurrentGameState() != EGameState::Playing)
+	{
+		return;
+	}
+
 	if (AxisValue != 0.f)
 	{
 		FRotator const ControlSpaceRot = GetControlRotation();
@@ -92,7 +105,14 @@ void ATantrumPlayerController::RequestThrowObject(float AxisValue)
 			const bool IsFlick = fabs(currentDelta) > FlickThreshold;
 			if (IsFlick)
 			{
-				TantrumCharacterBase->RequestThrowObject();
+				if (AxisValue > 0)
+				{
+					TantrumCharacterBase->RequestThrowObject();
+				}
+				else
+				{
+					TantrumCharacterBase->RequestUseObject();
+				}
 			}
 		}
 		else
@@ -120,6 +140,11 @@ void ATantrumPlayerController::RequestStopPullObject()
 
 void ATantrumPlayerController::RequestJump()
 {
+	if (!GameModeRef || GameModeRef->GetCurrentGameState() != EGameState::Playing)
+	{
+		return;
+	}
+	
 	if (GetCharacter())
 	{
 		GetCharacter()->Jump();
@@ -136,7 +161,16 @@ void ATantrumPlayerController::RequestStopJump()
 
 void ATantrumPlayerController::RequestCrouchStart()
 {
-	if(!GetCharacter()->GetCharacterMovement()->IsMovingOnGround()) {return;}
+	if (!GameModeRef || GameModeRef->GetCurrentGameState() != EGameState::Playing)
+	{
+		return;
+	}
+
+	if(!GetCharacter()->GetCharacterMovement()->IsMovingOnGround()) 
+	{
+		return;
+	}
+
 	if (GetCharacter())
 	{
 		GetCharacter()->Crouch();
@@ -153,6 +187,11 @@ void ATantrumPlayerController::RequestCrouchEnd()
 
 void ATantrumPlayerController::RequestSprintStart()
 {
+	if (!GameModeRef || GameModeRef->GetCurrentGameState() != EGameState::Playing)
+	{
+		return;
+	}
+
 	if (ATantrumCharacterBase* TantrumCharacterBase = Cast<ATantrumCharacterBase>(GetCharacter()))
 	{
 		TantrumCharacterBase->RequestSprintStart();
@@ -164,7 +203,7 @@ void ATantrumPlayerController::RequestSprintEnd()
 {
 	if (ATantrumCharacterBase* TantrumCharacterBase = Cast<ATantrumCharacterBase>(GetCharacter()))
 	{
-		TantrumCharacterBase->RequestSprintStart();
+		TantrumCharacterBase->RequestSprintEnd();
 		//GetCharacter()->GetCharacterMovement()->MaxWalkSpeed -= SprintSpeed;
 	}
 }
