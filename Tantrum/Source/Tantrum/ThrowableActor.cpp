@@ -11,12 +11,13 @@
 // Sets default values
 AThrowableActor::AThrowableActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+	SetReplicateMovement(true);
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponent");
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovementComponent");
 	RootComponent = StaticMeshComponent;
-
 }
 
 // Called when the game starts or when spawned
@@ -32,7 +33,7 @@ void AThrowableActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AThrowableActor::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
+void AThrowableActor::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 	if (State == EState::Idle || State == EState::Attached || State == EState::Dropped)
@@ -57,9 +58,11 @@ void AThrowableActor::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other
 			I->Execute_ApplyEffect(Other, EffectType, false);
 		}
 	}
+
 	//ignore all other hits
 
 	//this will wait until the projectile comes to a natural stop before returning it to idle
+
 
 	if (PullActor && State == EState::Pull)
 	{
@@ -98,7 +101,6 @@ void AThrowableActor::ProjectileStop(const FHitResult& ImpactResult)
 //void AThrowableActor::Tick(float DeltaTime)
 //{
 //	Super::Tick(DeltaTime);
-//
 //}
 
 bool AThrowableActor::Pull(AActor* InActor)
@@ -145,14 +147,17 @@ void AThrowableActor::Launch(const FVector& InitialVelocity, AActor* Target /* =
 
 void AThrowableActor::Drop()
 {
-	if (State == EState::Attached)
+	if (State == EState::Pull || State == EState::Attached)
 	{
-		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	}
+		if (State == EState::Attached)
+		{
+			DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		}
 
-	ProjectileMovementComponent->Activate(true);
-	ProjectileMovementComponent->HomingTargetComponent = nullptr;
-	State = EState::Dropped;
+		ProjectileMovementComponent->Activate(true);
+		ProjectileMovementComponent->HomingTargetComponent = nullptr;
+		State = EState::Dropped;
+	}
 }
 
 void AThrowableActor::ToggleHighlight(bool bIsOn)
@@ -162,7 +167,7 @@ void AThrowableActor::ToggleHighlight(bool bIsOn)
 
 EEffectType AThrowableActor::GetEffectType()
 {
-	return EEffectType();
+	return EffectType;
 }
 
 bool AThrowableActor::SetHomingTarget(AActor* Target)
@@ -183,5 +188,4 @@ bool AThrowableActor::SetHomingTarget(AActor* Target)
 	}
 
 	return false;
-
 }

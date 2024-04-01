@@ -13,58 +13,60 @@ class UUserWidget;
 UCLASS()
 class TANTRUM_API ATantrumPlayerController : public APlayerController
 {
-	GENERATED_BODY()
-
+    GENERATED_BODY()
 public:
 
-	virtual void BeginPlay() override;
-
+    virtual void BeginPlay() override;
+    //in local mp we need to make sure the controller has received the player in order to correctly set up the hud
+    virtual void ReceivedPlayer() override;
 protected:
-	void SetupInputComponent() override;
 
-	void RequestMoveForward(float AxisValue);
-	void RequestMoveRight(float AxisValue);
-	void RequestLookUp(float AxisValue);
-	void RequestLookRight(float AxisValue);
-	void RequestThrowObject(float AxisValue);
+    void SetupInputComponent() override;
 
-	void RequestPullObject();
-	void RequestStopPullObject();
+    void RequestMoveForward(float AxisValue);
+    void RequestMoveRight(float AxisValue);
+    void RequestLookUp(float AxisValue);
+    void RequestLookRight(float AxisValue);
+    void RequestThrowObject(float AxisValue);
 
-	void RequestJump();
-	void RequestStopJump();
+    void RequestPullObject();
+    void RequestStopPullObject();
 
-	void RequestCrouchStart();
-	void RequestCrouchEnd();
+    void RequestJump();
+    void RequestStopJump();
 
-	void RequestSprintStart();
-	void RequestSprintEnd();
+    void RequestCrouchStart();
+    void RequestCrouchEnd();
 
-	/*UPROPERTY(EditAnywhere, Category = "HUD")
-	TSubclassOf<class UUserWidget > HUDClass;
+    void RequestSprintStart();
+    void RequestSprintEnd();
 
-	UPROPERTY()
-	UUserWidget* HUDWidget;*/
+    UPROPERTY(EditAnywhere, Category = "HUD")
+    TSubclassOf<class UUserWidget> HUDClass;
 
-	/*Base lookup rate, in deg/sec. Other scaling may affect final lookup rate.*/
-	UPROPERTY(EditAnywhere, Category = "Look")
-	float BaseLookUpRate = 90.0f;
+    UPROPERTY()
+    UUserWidget* HUDWidget;
 
-	/*Base lookup rate, in deg/sec. Other scaling may affect final lookup rate.*/
-	UPROPERTY(EditAnywhere, Category = "Look")
-	float BaseLookRightRate = 90.0f;
+    /** Base lookup rate, in deg/sec. Other scaling may affect final lookup rate. */
+    UPROPERTY(EditAnywhere, Category = "Look")
+    float BaseLookUpRate = 90.0f;
 
-	//Sound Cur for Jumping Sound
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundCue* JumpSound = nullptr;
+    /** Base lookright rate, in deg/sec. Other scaling may affect final lookup rate. */
+    UPROPERTY(EditAnywhere, Category = "Look")
+    float BaseLookRightRate = 90.0f;
 
-	ATantrumGameModeBase* GameModeRef;
+    /**Sound Cue for Jumping Sound. */
 
-	//used to determine flick of axis
-	//float LastDelta = 0.0f;
-	float LastAxis = 0.0f;
+    UPROPERTY(EditAnywhere, Category = "Sound")
+    USoundCue* JumpSound = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
-	float FlickThreshold = 0.75f;
+    ATantrumGameModeBase* GameModeRef;
+
+    //used to determine flick of axis
+    //float LastDelta = 0.0f;
+    float LastAxis = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    float FlickThreshold = 0.70f;
+
 };
-

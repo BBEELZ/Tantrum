@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
 #include "InteractInterface.h"
+#include "GameFramework/Character.h"
+#include "Sound/SoundCue.h"
 #include "TantrumCharacterBase.generated.h"
 
 class AThrowableActor;
@@ -27,7 +28,6 @@ class TANTRUM_API ATantrumCharacterBase : public ACharacter, public IInteractInt
 public:
 	// Sets default values for this character's properties
 	ATantrumCharacterBase();
-
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -36,49 +36,92 @@ public:
 
 	virtual void Landed(const FHitResult& Hit) override;
 
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
+
 	void RequestSprintStart();
 	void RequestSprintEnd();
 
 	void RequestThrowObject();
+	void ServerRequestThrowObject_Implementation();
 	void RequestPullObject();
 	void RequestStopPullObject();
 	void ResetThrowableObject();
 
 	void RequestUseObject();
 
-	void OnThrowableAttached(AThrowableActor* InThowableActor);
+	void OnThrowableAttached(AThrowableActor* InThrowableActor);
 
 	bool CanThrowObject() const { return CharacterThrowState == ECharacterThrowState::Attached; }
-
-	void SphereCastPlayerView();
-
-	void SphereCastActorTransform();
-
-	void LineCastActorTransform();
-	
-	void ProcessTraceResult(const FHitResult& HitResult);
-
-	bool PlayThrowMontage();
-
-	void UnbindMontage();
-
-	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
-
-	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-	void OnNotifyBeginReceived(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
-
-	void OnNotifyEndReceived(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
 
 	UFUNCTION(BlueprintPure)
 	bool IsPullingObject() const { return CharacterThrowState == ECharacterThrowState::RequestingPull || CharacterThrowState == ECharacterThrowState::Pulling; }
 
 	UFUNCTION(BlueprintPure)
-	bool IsThrowingObject() const { return CharacterThrowState == ECharacterThrowState::Throwing; }
+	bool IsThrowing() const { return CharacterThrowState == ECharacterThrowState::Throwing; }
+
+	UFUNCTION(BlueprintPure)
+	ECharacterThrowState GetCharacterThrowState() const { return CharacterThrowState; }
+
+	UFUNCTION(BlueprintPure)
+	bool IsStunned() const { return bIsStunned; }
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	void SphereCastPlayerView();
+	void SphereCastActorTransform();
+	void LineCastActorTransform();
+	void ProcessTraceResult(const FHitResult& HitResult);
+
+	/*UFUNCTION(Server, Reliable)
+	void PullObject();*/
+
+	//RPC's actions that can need to be done on the server in order to replicate
+	UFUNCTION(Server, Reliable)
+	void ServerPullObject(AThrowableActor* InThrowableActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestPullObject(bool bIsPulling);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestThrowObject();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRequestThrowObject();
+
+	UFUNCTION(Client, Reliable)
+	void ClientThrowableAttached(AThrowableActor* InThrowableActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerBeginThrow();
+
+	UFUNCTION(Server, Reliable)
+	void ServerFinishThrow();
+
+	bool PlayThrowMontage();
+	void UnbindMontage();
+
+	UFUNCTION()
+	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION()
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION()
+	void OnNotifyBeginReceived(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
+
+	UFUNCTION()
+	void OnNotifyEndReceived(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
+
+	void OnStunBegin(float StunRatio);
+	void UpdateStun();
+	void OnStunEnd();
+
+	void UpdateRescue(float DeltaTime);
+	void StartRescue();
+	void EndRescue();
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float SprintSpeed = 1200.0f;
@@ -92,9 +135,12 @@ protected:
 	//Time in Seconds
 	UPROPERTY(EditAnywhere, Category = "Fall Impact")
 	float MinStunTime = 1.0f;
-
+	//Time in Seconds
 	UPROPERTY(EditAnywhere, Category = "Fall Impact")
 	float MaxStunTime = 1.0f;
+	//Sound Cue Fall Impact
+	UPROPERTY(EditAnywhere, Category = "Fall Impact")
+	USoundCue* HeavyLandSound = nullptr;
 
 	float StunTime = 0.0f;
 	float StunBeginTimestamp = 0.0f;
@@ -104,8 +150,13 @@ protected:
 
 	float MaxWalkSpeed = 0.0f;
 
-	UPROPERTY(VisibleAnywhere, Category = "Throw")
+
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_CharacterThrowState, Category = "Throw")
+	//UPROPERTY(VisibleAnywhere, replicated, Category = "Throw")
 	ECharacterThrowState CharacterThrowState = ECharacterThrowState::None;
+
+	UFUNCTION()
+	void OnRep_CharacterThrowState(const ECharacterThrowState& OldCharacterThrowState);
 
 	UPROPERTY(EditAnywhere, Category = "Throw", meta = (ClampMin = "0.0", Unit = "ms"))
 	float ThrowSpeed = 2000.0f;
@@ -116,9 +167,13 @@ protected:
 	FOnMontageBlendingOutStarted BlendingOutDelegate;
 	FOnMontageEnded MontageEndedDelegate;
 
-	void OnStunBegin(float StunRatio);
-	void UpdateStun();
-	void OnStunEnd();
+	//handle fall out of world
+	FVector LastGroundPosition = FVector::ZeroVector; //Last Position on World when OnGround
+	FVector FallOutOfWorldPosition = FVector::ZeroVector; //Position From Player when it Hits KillZ
+	float CurrentRescueTime = 0.0f; // Used to set a timer from Moving Player back to Ground
+	bool bIsPlayerBeingRescued = false;//Set to true in fell out of world
+	UPROPERTY(EditAnywhere, Category = "KillZ")
+	float TimeToRescuePlayer = 3.f;//Set time that takes to put Player back in Ground
 
 private:
 
@@ -132,8 +187,9 @@ private:
 	bool bIsUnderEffect = false;
 	bool bIsEffectBuff = false;
 
-	float DefaultEffectCooldown = 5.0f;
+	float DefautlEffectCooldown = 5.0f;
 	float EffectCooldown = 0.0f;
 
 	EEffectType CurrentEffect = EEffectType::None;
+
 };

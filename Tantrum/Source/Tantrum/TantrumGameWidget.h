@@ -7,7 +7,7 @@
 #include "TantrumGameWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class TANTRUM_API UTantrumGameWidget : public UUserWidget

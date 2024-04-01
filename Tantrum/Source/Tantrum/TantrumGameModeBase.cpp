@@ -1,22 +1,25 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 
 #include "TantrumGameModeBase.h"
-
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ATantrumGameModeBase::ATantrumGameModeBase()
 {
-
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void ATantrumGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-
 	CurrentGameState = EGameState::Waiting;
-	DisplayCountdown();
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATantrumGameModeBase::StartGame, GameCountdownDuration, false);
+}
+
+void ATantrumGameModeBase::ReceivePlayer(APlayerController* PlayerController)
+{
+	AttemptStartGame();
 }
 
 EGameState ATantrumGameModeBase::GetCurrentGameState() const
@@ -24,12 +27,39 @@ EGameState ATantrumGameModeBase::GetCurrentGameState() const
 	return CurrentGameState;
 }
 
-void ATantrumGameModeBase::PlayerReachedEnd()
+void ATantrumGameModeBase::PlayerReachedEnd(APlayerController* PlayerController)
 {
+	//one gamemode base is shared between players in local mp
 	CurrentGameState = EGameState::GameOver;
-	// ToDo - Return to update widget.
+	UTantrumGameWidget** GameWidget = GameWidgets.Find(PlayerController);
+	if (GameWidget)
+	{
+		(*GameWidget)->LevelComplete();
+		FInputModeUIOnly InputMode;
+		PlayerController->SetInputMode(InputMode);
+		PlayerController->SetShowMouseCursor(true);
+		if (PlayerController->GetCharacter() && PlayerController->GetCharacter()->GetCharacterMovement())
+		{
+			PlayerController->GetCharacter()->GetCharacterMovement()->DisableMovement();
+		}
+	}
+}
 
-	// ToDo - Return to control PlayerController Input state
+void ATantrumGameModeBase::AttemptStartGame()
+{
+	if (GetNumPlayers() == NumExpectedPlayers)
+	{
+		DisplayCountdown();
+		if (GameCountdownDuration > SMALL_NUMBER)
+		{
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ATantrumGameModeBase::StartGame, GameCountdownDuration, false);
+		}
+		else
+		{
+			StartGame();
+		}
+
+	}
 }
 
 void ATantrumGameModeBase::DisplayCountdown()
@@ -39,13 +69,46 @@ void ATantrumGameModeBase::DisplayCountdown()
 		return;
 	}
 
-	PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	GameWidget = CreateWidget<UTantrumGameWidget>(PC, GameWidgetClass);
-	GameWidget->AddToViewport();
-	GameWidget->StartCountdown(GameCountdownDuration, this);
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		if (PlayerController && PlayerController->PlayerState && !MustSpectate(PlayerController))
+		{
+			if (UTantrumGameWidget* GameWidget = CreateWidget<UTantrumGameWidget>(PlayerController, GameWidgetClass))
+			{
+				//GameWidget->AddToViewport();
+				GameWidget->AddToPlayerScreen();
+				GameWidget->StartCountdown(GameCountdownDuration, this);
+				GameWidgets.Add(PlayerController, GameWidget);
+			}
+		}
+	}
 }
 
 void ATantrumGameModeBase::StartGame()
 {
 	CurrentGameState = EGameState::Playing;
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		if (PlayerController && PlayerController->PlayerState && !MustSpectate(PlayerController))
+		{
+			FInputModeGameOnly InputMode;
+			PlayerController->SetInputMode(InputMode);
+			PlayerController->SetShowMouseCursor(false);
+		}
+	}
+}
+
+void ATantrumGameModeBase::RestartPlayer(AController* NewPlayer)
+{
+	Super::RestartPlayer(NewPlayer);
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(NewPlayer))
+	{
+		if (PlayerController->GetCharacter() && PlayerController->GetCharacter()->GetCharacterMovement())
+		{
+			PlayerController->GetCharacter()->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		}
+	}
 }
