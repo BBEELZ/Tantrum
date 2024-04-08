@@ -5,6 +5,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "TantrumGameInstance.h"
+#include "TantrumGameStateBase.h"
+#include "TantrumPlayerController.h"
+#include "TantrumPlayerState.h"
 
 ATantrumGameModeBase::ATantrumGameModeBase()
 {
@@ -14,41 +18,22 @@ ATantrumGameModeBase::ATantrumGameModeBase()
 void ATantrumGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-	CurrentGameState = EGameState::Waiting;
-}
-
-void ATantrumGameModeBase::ReceivePlayer(APlayerController* PlayerController)
-{
-	AttemptStartGame();
-}
-
-EGameState ATantrumGameModeBase::GetCurrentGameState() const
-{
-	return CurrentGameState;
-}
-
-void ATantrumGameModeBase::PlayerReachedEnd(APlayerController* PlayerController)
-{
-	//one gamemode base is shared between players in local mp
-	CurrentGameState = EGameState::GameOver;
-	UTantrumGameWidget** GameWidget = GameWidgets.Find(PlayerController);
-	if (GameWidget)
+	if (ATantrumGameStateBase* TantrumGameState = GetGameState<ATantrumGameStateBase>())
 	{
-		(*GameWidget)->LevelComplete();
-		FInputModeUIOnly InputMode;
-		PlayerController->SetInputMode(InputMode);
-		PlayerController->SetShowMouseCursor(true);
-		if (PlayerController->GetCharacter() && PlayerController->GetCharacter()->GetCharacterMovement())
-		{
-			PlayerController->GetCharacter()->GetCharacterMovement()->DisableMovement();
-		}
+		TantrumGameState->SetGameState(EGameState::Waiting);
 	}
+
 }
 
 void ATantrumGameModeBase::AttemptStartGame()
 {
+	if (ATantrumGameStateBase* TantrumGameState = GetGameState<ATantrumGameStateBase>())
+	{
+		TantrumGameState->SetGameState(EGameState::Waiting);
+	}
 	if (GetNumPlayers() == NumExpectedPlayers)
 	{
+		//this needs to be replicated, call a function on game instance and replicate
 		DisplayCountdown();
 		if (GameCountdownDuration > SMALL_NUMBER)
 		{
@@ -56,30 +41,23 @@ void ATantrumGameModeBase::AttemptStartGame()
 		}
 		else
 		{
+			//this is always called from the authority, aka here
 			StartGame();
 		}
 
 	}
 }
-
+//this needs to be done on the game instance...
 void ATantrumGameModeBase::DisplayCountdown()
 {
-	if (!GameWidgetClass)
-	{
-		return;
-	}
-
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PlayerController = Iterator->Get();
 		if (PlayerController && PlayerController->PlayerState && !MustSpectate(PlayerController))
 		{
-			if (UTantrumGameWidget* GameWidget = CreateWidget<UTantrumGameWidget>(PlayerController, GameWidgetClass))
+			if (ATantrumPlayerController* TantrumPlayerController = Cast< ATantrumPlayerController>(PlayerController))
 			{
-				//GameWidget->AddToViewport();
-				GameWidget->AddToPlayerScreen();
-				GameWidget->StartCountdown(GameCountdownDuration, this);
-				GameWidgets.Add(PlayerController, GameWidget);
+				TantrumPlayerController->ClientDisplayCountdown(GameCountdownDuration);
 			}
 		}
 	}
@@ -87,15 +65,29 @@ void ATantrumGameModeBase::DisplayCountdown()
 
 void ATantrumGameModeBase::StartGame()
 {
-	CurrentGameState = EGameState::Playing;
+	if (ATantrumGameStateBase* TantrumGameState = GetGameState<ATantrumGameStateBase>())
+	{
+		TantrumGameState->SetGameState(EGameState::Playing);
+		TantrumGameState->ClearResults();
+	}
+
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		APlayerController* PlayerController = Iterator->Get();
 		if (PlayerController && PlayerController->PlayerState && !MustSpectate(PlayerController))
 		{
+			//cast and start?
+			//this does not work on all controllers...
 			FInputModeGameOnly InputMode;
 			PlayerController->SetInputMode(InputMode);
 			PlayerController->SetShowMouseCursor(false);
+
+			ATantrumPlayerState* PlayerState = PlayerController->GetPlayerState<ATantrumPlayerState>();
+			if (PlayerState)
+			{
+				PlayerState->SetCurrentState(EPlayerGameState::Playing);
+				PlayerState->SetIsWinner(false);
+			}
 		}
 	}
 }
@@ -109,6 +101,34 @@ void ATantrumGameModeBase::RestartPlayer(AController* NewPlayer)
 		if (PlayerController->GetCharacter() && PlayerController->GetCharacter()->GetCharacterMovement())
 		{
 			PlayerController->GetCharacter()->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			ATantrumPlayerState* PlayerState = PlayerController->GetPlayerState<ATantrumPlayerState>();
+			if (PlayerState)
+			{
+				PlayerState->SetCurrentState(EPlayerGameState::Waiting);
+			}
+		}
+	}
+
+	AttemptStartGame();
+}
+
+void ATantrumGameModeBase::RestartGame()
+{
+	ResetLevel();
+	//RestartGame();
+	//GetWorld()->ServerTravel(TEXT("?Restart"), false);
+	//ProcessServerTravel("?Restart");
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		if (PlayerController && PlayerController->PlayerState && !MustSpectate(PlayerController))
+		{
+			//call something to clean up the hud 
+			if (ATantrumPlayerController* TantrumPlayerController = Cast< ATantrumPlayerController>(PlayerController))
+			{
+				TantrumPlayerController->ClientRestartGame();
+			}
+			RestartPlayer(PlayerController);
 		}
 	}
 }

@@ -8,19 +8,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "TantrumGameModeBase.generated.h"
 
-// Enum to track the current state of the game 
-UENUM(BlueprintType)
-enum class EGameState : uint8
-{
-	None		UMETA(DisplayName = "None"),
-	Waiting		UMETA(DisplayName = "Waiting"),
-	Playing		UMETA(DisplayName = "Playing"),
-	Paused		UMETA(DisplayName = "Paused"),
-	GameOver	UMETA(DisplayName = "GameOver"),
-};
-
 class AController;
-
+class ATantrumPlayerController;
 UCLASS()
 class TANTRUM_API ATantrumGameModeBase : public AGameModeBase
 {
@@ -34,19 +23,11 @@ public:
 	virtual void BeginPlay() override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
 
-	UFUNCTION(BlueprintCallable)
-	EGameState GetCurrentGameState() const;
-	void PlayerReachedEnd(APlayerController* PlayerController);
-
-	void ReceivePlayer(APlayerController* PlayerController);
-
+	void RestartGame();
 private:
 
 	// --- VARS --- //
 
-	// Create and set CurrentGameState to NONE. This will be tracked in the code file. 
-	UPROPERTY(VisibleAnywhere, Category = "States")
-	EGameState CurrentGameState = EGameState::None;
 	// Countdown before gameplay state begins. Exposed so we can easily change this in BP editor. 
 	UPROPERTY(EditAnywhere, Category = "Game Details")
 	float GameCountdownDuration = 4.0f;
@@ -60,10 +41,6 @@ private:
 
 	FTimerHandle TimerHandle;
 
-	UPROPERTY()
-	TMap<APlayerController*, UTantrumGameWidget*> GameWidgets; // Object we'll be creating and adding to the Viewport
-	UPROPERTY(EditAnywhere, Category = "Widget")
-	TSubclassOf<UTantrumGameWidget> GameWidgetClass; // Exposed class to check the type of widget to display
 
 	// --- FUNCTIONS --- //
 	void AttemptStartGame();
