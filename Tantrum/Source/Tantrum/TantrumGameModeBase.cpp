@@ -9,6 +9,7 @@
 #include "TantrumGameStateBase.h"
 #include "TantrumPlayerController.h"
 #include "TantrumPlayerState.h"
+#include "TantrumAIController.h"
 
 ATantrumGameModeBase::ATantrumGameModeBase()
 {
@@ -114,6 +115,16 @@ void ATantrumGameModeBase::RestartPlayer(AController* NewPlayer)
 
 void ATantrumGameModeBase::RestartGame()
 {
+
+	//destroy the actor
+	for (FConstControllerIterator Iterator = GetWorld()->GetControllerIterator(); Iterator; ++Iterator)
+	{
+		ATantrumAIController* TantrumAIController = Cast<ATantrumAIController>(Iterator->Get());
+		if (TantrumAIController && TantrumAIController->GetPawn())
+		{
+			TantrumAIController->Destroy(true);
+		}
+	}
 	ResetLevel();
 	//RestartGame();
 	//GetWorld()->ServerTravel(TEXT("?Restart"), false);

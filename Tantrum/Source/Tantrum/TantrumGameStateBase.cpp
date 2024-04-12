@@ -7,35 +7,51 @@
 #include "TantrumPlayerController.h"
 #include "TantrumPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "TantrumAIController.h"
+
+void ATantrumGameStateBase::UpdateResults(ATantrumPlayerState* PlayerState, ATantrumCharacterBase* TantrumCharacter)
+{
+	if (!PlayerState || !TantrumCharacter)
+	{
+		return;
+	}
+
+	const bool IsWinner = Results.Num() == 0;
+	PlayerState->SetIsWinner(IsWinner);
+
+	PlayerState->SetCurrentState(EPlayerGameState::Finished);
+
+	FGameResult Result;
+	Result.Name = TantrumCharacter->GetName();
+
+	Result.Time = 5.0f;
+	Results.Add(Result);
+}
+
 //only ever called by the authority
 void ATantrumGameStateBase::OnPlayerReachedEnd(ATantrumCharacterBase* TantrumCharacter)
 {
 	ensureMsgf(HasAuthority(), TEXT("ATantrumGameStateBase::OnPlayerReachedEnd being called from Non Authority!"));
+
 	if (ATantrumPlayerController* TantrumPlayerController = TantrumCharacter->GetController<ATantrumPlayerController>())
 	{
 
 		TantrumPlayerController->ClientReachedEnd();
 		TantrumCharacter->GetCharacterMovement()->DisableMovement();
-
 		ATantrumPlayerState* PlayerState = TantrumPlayerController->GetPlayerState<ATantrumPlayerState>();
-		if (PlayerState)
-		{
-			const bool IsWinner = Results.Num() == 0;
-			PlayerState->SetIsWinner(IsWinner);
-			PlayerState->SetCurrentState(EPlayerGameState::Finished);
-		}
-
-		FGameResult Result;
-		Result.Name = TantrumCharacter->GetName();
-		//TODO get the actual time it took in order to post to a leaderboard/results widget
-		Result.Time = 5.0f;
-		Results.Add(Result);
+		UpdateResults(PlayerState, TantrumCharacter);
 
 		//TODO this will not work once JIP(Join In Progress) is enabled
 		if (Results.Num() == PlayerArray.Num())
 		{
 			GameState = EGameState::GameOver;
 		}
+	}
+	else if (ATantrumAIController* TantrumAIController = TantrumCharacter->GetController<ATantrumAIController>())
+	{
+		ATantrumPlayerState* PlayerState = TantrumAIController->GetPlayerState<ATantrumPlayerState>();
+		UpdateResults(PlayerState, TantrumCharacter);
+		TantrumAIController->OnReachedEnd();
 	}
 }
 

@@ -285,6 +285,34 @@ void ATantrumCharacterBase::RequestPullObject()
 	}
 }
 
+bool ATantrumCharacterBase::AttemptPullObjectAtLocation(const FVector& InLocation)
+{
+	if (CharacterThrowState != ECharacterThrowState::None || CharacterThrowState != ECharacterThrowState::RequestingPull)
+	{
+		return false;
+	}
+
+	FVector StartPos = GetActorLocation();
+	FVector EndPos = InLocation;
+	FHitResult HitResult;
+	GetWorld() ? GetWorld()->LineTraceSingleByChannel(HitResult, StartPos, EndPos, ECollisionChannel::ECC_Visibility) : false;
+#if ENABLE_DRAW_DEBUG
+	if (CVarDisplayTrace->GetBool())
+	{
+		DrawDebugLine(GetWorld(), StartPos, EndPos, HitResult.bBlockingHit ? FColor::Red : FColor::White, false);
+	}
+#endif
+	CharacterThrowState = ECharacterThrowState::RequestingPull;
+	ProcessTraceResult(HitResult, false);
+	if (CharacterThrowState == ECharacterThrowState::Pulling)
+	{
+		return true;
+	}
+
+	CharacterThrowState = ECharacterThrowState::None;
+	return false;
+}
+
 void ATantrumCharacterBase::RequestStopPullObject()
 {
 	//if was pulling an object, drop it
@@ -384,7 +412,6 @@ void ATantrumCharacterBase::OnThrowableAttached(AThrowableActor* InThrowableActo
 	//InThrowableActor->ToggleHighlight(false);
 }
 
-
 bool ATantrumCharacterBase::IsHovering() const
 {
 	if (ATantrumPlayerState* TantrumPlayerState = GetPlayerState<ATantrumPlayerState>())
@@ -471,7 +498,7 @@ void ATantrumCharacterBase::LineCastActorTransform()
 	ProcessTraceResult(HitResult);
 }
 
-void ATantrumCharacterBase::ProcessTraceResult(const FHitResult& HitResult)
+void ATantrumCharacterBase::ProcessTraceResult(const FHitResult& HitResult, bool bHighlight /* = true*/)
 {
 	//check if there was an existing throwable actor
 	//remove the hightlight to avoid wrong feedback 
@@ -496,7 +523,10 @@ void ATantrumCharacterBase::ProcessTraceResult(const FHitResult& HitResult)
 	if (!IsSameActor)
 	{
 		ThrowableActor = HitThrowableActor;
-		ThrowableActor->ToggleHighlight(true);
+		if (bHighlight)
+		{
+			ThrowableActor->ToggleHighlight(true);
+		}
 	}
 
 	if (CharacterThrowState == ECharacterThrowState::RequestingPull)
@@ -505,9 +535,9 @@ void ATantrumCharacterBase::ProcessTraceResult(const FHitResult& HitResult)
 		if (GetVelocity().SizeSquared() < 100.0f)
 		{
 			ServerPullObject(ThrowableActor);
-			//PullObject(ThrowableActor);
+			CharacterThrowState = ECharacterThrowState::Pulling;
 			ThrowableActor->ToggleHighlight(false);
-			//ThrowableActor = nullptr;
+			
 		}
 	}
 }

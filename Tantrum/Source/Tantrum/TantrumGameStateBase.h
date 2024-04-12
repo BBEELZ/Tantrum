@@ -18,6 +18,7 @@ enum class EGameState : uint8
 };
 
 class ATantrumCharacterBase;
+class ATantrumPlayerState;
 
 USTRUCT()
 struct FGameResult
@@ -45,6 +46,8 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	bool IsPlaying() const { return GameState == EGameState::Playing; }
+
+	void UpdateResults(ATantrumPlayerState* PlayerState, ATantrumCharacterBase* TantrumCharacter);
 
 	//this will only be called on authority
 	void OnPlayerReachedEnd(ATantrumCharacterBase* TantrumCharacter);
