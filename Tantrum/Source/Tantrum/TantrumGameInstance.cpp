@@ -12,7 +12,7 @@ void UTantrumGameInstance::DisplayCountdown(float GameCountdownDuration, ATantru
 	{
 		UTantrumGameWidget* PlayerGameWidget = nullptr;
 		UTantrumGameWidget** GameWidget = GameWidgets.Find(TantrumPlayerController);
-		if (!GameWidget)
+		if (GameWidget == nullptr)
 		{
 			PlayerGameWidget = CreateWidget<UTantrumGameWidget>(TantrumPlayerController, GameWidgetClass);
 			if (PlayerGameWidget)
