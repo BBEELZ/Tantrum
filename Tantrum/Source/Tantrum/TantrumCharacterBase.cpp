@@ -12,6 +12,8 @@
 #include "TantrumGameInstance.h"
 #include "TantrumPlayerState.h"
 
+#include "VisualLogger/VisualLogger.h"
+
 constexpr int CVSphereCastPlayerView = 0;
 constexpr int CVSphereCastActorTransform = 1;
 constexpr int CVLineCastActorTransform = 2;
@@ -38,6 +40,8 @@ static TAutoConsoleVariable<bool> CVarDisplayThrowVelocity(
 	false,
 	TEXT("Display Throw Velocity"),
 	ECVF_Default);
+
+DEFINE_LOG_CATEGORY_STATIC(LogTantrumChar, Verbose, Verbose)
 
 // Sets default values
 ATantrumCharacterBase::ATantrumCharacterBase()
@@ -285,6 +289,15 @@ void ATantrumCharacterBase::RequestPullObject()
 	}
 }
 
+void ATantrumCharacterBase::RequestAim()
+{
+	if (!bIsStunned && CharacterThrowState == ECharacterThrowState::Attached)
+	{
+		CharacterThrowState = ECharacterThrowState::Aiming;
+		ServerRequestToggleAim(true);
+	}
+}
+
 bool ATantrumCharacterBase::AttemptPullObjectAtLocation(const FVector& InLocation)
 {
 	if (CharacterThrowState != ECharacterThrowState::None || CharacterThrowState != ECharacterThrowState::RequestingPull)
@@ -322,6 +335,20 @@ void ATantrumCharacterBase::RequestStopPullObject()
 		ServerRequestPullObject(false);
 		//ResetThrowableObject();
 	}
+}
+
+void ATantrumCharacterBase::RequestStopAim()
+{
+	if (CharacterThrowState == ECharacterThrowState::Aiming)
+	{
+		CharacterThrowState = ECharacterThrowState::Attached;
+		ServerRequestToggleAim(false);
+	}
+}
+
+void ATantrumCharacterBase::ServerRequestToggleAim_Implementation(bool IsAiming)
+{
+	CharacterThrowState = IsAiming ? ECharacterThrowState::Aiming : ECharacterThrowState::Attached;
 }
 
 void ATantrumCharacterBase::ServerRequestPullObject_Implementation(bool bIsPulling)
@@ -366,6 +393,9 @@ void ATantrumCharacterBase::ServerBeginThrow_Implementation()
 		const FVector& Start = GetMesh()->GetSocketLocation(TEXT("ObjectAttach"));
 		DrawDebugLine(GetWorld(), Start, Start + Direction, FColor::Red, false, 5.0f);
 	}
+
+	const FVector& Start = GetMesh()->GetSocketLocation(TEXT("ObjectAttach"));
+	UE_VLOG_ARROW(this, LogTantrumChar, Verbose, Start, Start + Direction, FColor::Red, TEXT("Throw Direction"));
 }
 
 void ATantrumCharacterBase::ServerFinishThrow_Implementation()
@@ -410,6 +440,11 @@ void ATantrumCharacterBase::OnThrowableAttached(AThrowableActor* InThrowableActo
 	MoveIgnoreActorAdd(ThrowableActor);
 	ClientThrowableAttached(InThrowableActor);
 	//InThrowableActor->ToggleHighlight(false);
+}
+
+void ATantrumCharacterBase::NotifyHitByThrowable(AThrowableActor* InThrowable)
+{
+	OnStunBegin(1.0f);
 }
 
 bool ATantrumCharacterBase::IsHovering() const
@@ -702,7 +737,7 @@ void ATantrumCharacterBase::OnStunBegin(float StunRatio)
 	{
 		RequestSprintEnd();
 	}
-	GetMesh();
+	ResetThrowableObject();
 }
 
 void ATantrumCharacterBase::UpdateStun(float DeltaTime)

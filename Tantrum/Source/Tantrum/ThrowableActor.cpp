@@ -57,6 +57,15 @@ void AThrowableActor::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPri
 		{
 			I->Execute_ApplyEffect(Other, EffectType, false);
 		}
+
+		AActor* CurrentOwner = GetOwner();
+		if (CurrentOwner && CurrentOwner != Other)
+		{
+			if (ATantrumCharacterBase* TantrumCharacterBase = Cast<ATantrumCharacterBase>(Other))
+			{
+				TantrumCharacterBase->NotifyHitByThrowable(this);
+			}
+		}
 	}
 
 	//ignore all other hits

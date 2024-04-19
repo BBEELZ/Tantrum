@@ -123,8 +123,8 @@ void ATantrumPlayerController::SetupInputComponent()
 		InputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Pressed, this, &ATantrumPlayerController::RequestSprintStart);
 		InputComponent->BindAction(TEXT("Sprint"), EInputEvent::IE_Released, this, &ATantrumPlayerController::RequestSprintEnd);
 
-		InputComponent->BindAction(TEXT("PullObject"), EInputEvent::IE_Pressed, this, &ATantrumPlayerController::RequestPullObject);
-		InputComponent->BindAction(TEXT("PullObject"), EInputEvent::IE_Released, this, &ATantrumPlayerController::RequestStopPullObject);
+		InputComponent->BindAction(TEXT("PullorAimObject"), EInputEvent::IE_Pressed, this, &ATantrumPlayerController::RequestPullorAimObject);
+		InputComponent->BindAction(TEXT("PullorAimObject"), EInputEvent::IE_Released, this, &ATantrumPlayerController::RequestStopPullorAimObject);
 
 		InputComponent->BindAxis(TEXT("MoveForward"), this, &ATantrumPlayerController::RequestMoveForward);
 		InputComponent->BindAxis(TEXT("MoveRight"), this, &ATantrumPlayerController::RequestMoveRight);
@@ -230,7 +230,7 @@ void ATantrumPlayerController::RequestThrowObject(float AxisValue)
 	}
 }
 
-void ATantrumPlayerController::RequestPullObject()
+void ATantrumPlayerController::RequestPullorAimObject()
 {
 	if (!CanProcessRequest())
 	{
@@ -238,12 +238,17 @@ void ATantrumPlayerController::RequestPullObject()
 	}
 
 	if (ATantrumCharacterBase* TantrumCharacterBase = Cast<ATantrumCharacterBase>(GetCharacter()))
-	{
-		TantrumCharacterBase->RequestPullObject();
-	}
+		if (TantrumCharacterBase->CanAim())
+		{
+			TantrumCharacterBase->RequestAim();
+		}
+		else
+		{
+			TantrumCharacterBase->RequestPullObject();
+		}
 }
 
-void ATantrumPlayerController::RequestStopPullObject()
+void ATantrumPlayerController::RequestStopPullorAimObject()
 {
 	if (ATantrumCharacterBase* TantrumCharacterBase = Cast<ATantrumCharacterBase>(GetCharacter()))
 	{
